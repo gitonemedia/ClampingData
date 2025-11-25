@@ -12,8 +12,8 @@
     <div class="container">
         <header class="site-header centered">
             <!-- Prominent logo as primary header -->
-            <div class="logo-wrap logo-inline">
-                {% include 'partials/logo_inline.svg' %}
+            <div class="logo-wrap">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" class="site-logo" alt="Clampers logo">
             </div>
             <!-- App name and tagline placed underneath the logo, smaller -->
             <div class="site-title small">
