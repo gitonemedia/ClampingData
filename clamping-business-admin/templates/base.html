@@ -10,8 +10,16 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Clamping Business Administration</h1>
+        <header class="site-header centered">
+            <!-- Prominent logo as primary header -->
+            <div class="logo-wrap logo-inline">
+                {% include 'partials/logo_inline.svg' %}
+            </div>
+            <!-- App name and tagline placed underneath the logo, smaller -->
+            <div class="site-title small">
+                <div class="site-name">Clamping Business Administration</div>
+                <p class="tagline">Secure Clamping Management</p>
+            </div>
             <nav>
                 <ul>
                     <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
