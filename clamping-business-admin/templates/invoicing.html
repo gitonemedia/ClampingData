@@ -45,6 +45,7 @@
                             <th>Time In</th>
                             <th>Time Released</th>
                             <th>Offense</th>
+                            <th>Amount (USD)</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -57,11 +58,16 @@
                             <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
                             <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
                             <td>{{ clamp.offense }}</td>
+                            <td>{{ '%.2f'|format(clamp.amount_paid or 0) }}</td>
                             <td><span class="status-paid">Paid</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+
+                <div class="invoice-footer">
+                    <p class="invoice-info"><strong>Total Amount:</strong> {{ '%.2f'|format(total_amount) }} USD</p>
+                </div>
 
                 <div class="invoice-footer">
                     <p>This is an official record of all paid clamping records. Please keep for your records.</p>

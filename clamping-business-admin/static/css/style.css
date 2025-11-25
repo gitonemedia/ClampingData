@@ -36,11 +36,9 @@ body {
 }
 
 .logo-wrap { display:flex; align-items:center; justify-content:center; }
-.site-logo { height:96px; width:auto; display:block; max-width:280px; }
-.logo-inline svg { height:96px; width:auto; max-width:280px; display:block; }
-.site-title.small { margin-top:8px; }
+.site-logo { height:280px; width:auto; display:block; max-width:100%; }
 .site-title .site-name { margin:0; font-size:1rem; font-weight:700; text-align:center; color:#333; }
-.tagline { color: #666; font-size: 0.9rem; margin-top:6px; }
+.tagline { color: #666; font-size: 0.95rem; margin-top:6px; }
 
 h1 {
     color: #333;
@@ -236,58 +234,40 @@ textarea {
 }
 
 /* Status Badges */
-.status-paid {
-    background: #2ecc71;
-    color: white;
+.status-paid, .status-approved {
+    background: #1e7e34; /* darker green for better contrast */
+    color: #ffffff;
     padding: 5px 10px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
-.status-not-paid {
-    background: #e74c3c;
-    color: white;
+.status-not-paid, .status-rejected {
+    background: #b22222; /* firebrick red */
+    color: #ffffff;
     padding: 5px 10px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .status-processing {
-    background: #f39c12;
-    color: white;
+    background: #b86b00; /* darker orange */
+    color: #ffffff;
     padding: 5px 10px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .status-pending {
-    background: #3498db;
-    color: white;
+    background: #1f6390; /* darker blue */
+    color: #ffffff;
     padding: 5px 10px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
-}
-
-.status-approved {
-    background: #2ecc71;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.status-rejected {
-    background: #e74c3c;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Alerts */
@@ -345,14 +325,13 @@ textarea {
 .appeals-table tbody tr:nth-child(even) {
     background: #f5f5f5;
 }
+@media (max-width: 800px) {
     .form {
         grid-template-columns: 1fr;
     }
-    
     .data-table {
         font-size: 12px;
     }
-    
     .data-table th, .data-table td {
         padding: 8px;
     }

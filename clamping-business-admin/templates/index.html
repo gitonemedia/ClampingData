@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clamping Business Administration</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Clamping Business Administration</h1>
-        
+{% extends 'base.html' %}
+{% block header_logo %}{% endblock %}
+{% block content %}
+    <div class="page-container compact">
+        <div class="page-header">
+            <h2 class="page-title">Clamping Business Administration</h2>
+        </div>
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -43,6 +38,8 @@
                             <th>Offense</th>
                             <th>Payment Status</th>
                             <th>Actions</th>
+                            
+
                         </tr>
                     </thead>
                     <tbody>
@@ -326,5 +323,4 @@
             .catch(error => console.error('Error:', error));
         }
     </script>
-</body>
-</html>
+{% endblock %}
