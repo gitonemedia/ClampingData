@@ -3,6 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clamp Entries List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Clamp Entries</h1>
+        <a href="{{ url_for('clamp_form') }}" class="btn">Add New Entry</a>
+        
+        <table class="clamp-table">
+            <thead>
+                <tr>
+                    <th>Clamp ID</th>
+                    <th>Customer</th>
+                    <th>Vehicle Reg</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clamp in clamps %}
+                <tr>
+                    <td>{{ clamp.clamp_id }}</td>
+                    <td>{{ clamp.customer_name }}</td>
+                    <td>{{ clamp.vehicle_registration }}</td>
+                    <td>{{ clamp.location }}</td>
+                    <td><span class="status-{{ clamp.status.lower() }}">{{ clamp.status }}</span></td>
+                    <td>{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('clamp_edit', id=clamp.id) }}" class="btn btn-small">Edit</a>
+                        <a href="{{ url_for('clamp_delete', id=clamp.id) }}" class="btn btn-small btn-danger" onclick="return confirm('Delete?')">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clamp List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>

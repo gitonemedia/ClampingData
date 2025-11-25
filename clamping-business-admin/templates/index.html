@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clamping Business Administration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Clamping Business Administration</h1>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'data-tab')">View Data</button>
+            <button class="tab-button" onclick="openTab(event, 'add-tab')">Add New Entry</button>
+            <button class="tab-button" onclick="openTab(event, 'invoicing-tab')">Invoicing</button>
+            <button class="tab-button" onclick="openTab(event, 'appeals-tab')">Appeals</button>
+            <a class="btn btn-secondary" href="{{ url_for('appeals') }}" target="_blank" style="margin-left:8px">Open Appeals Page</a>
+        </div>
+
+        <!-- View Data Tab -->
+        <div id="data-tab" class="tab-content active">
+            <h2>Clamp Data Records</h2>
+            {% if clamps %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Registration</th>
+                            <th>Date</th>
+                            <th>Time In</th>
+                            <th>Time Released</th>
+                            <th>Offense</th>
+                            <th>Payment Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for clamp in clamps %}
+                        <tr id="row-{{ clamp.id }}" class="data-row">
+                            <td class="editable" data-field="location" data-id="{{ clamp.id }}">{{ clamp.location }}</td>
+                            <td class="editable" data-field="registration" data-id="{{ clamp.id }}">{{ clamp.registration or '' }}</td>
+                            <td class="editable" data-field="clamp_date" data-id="{{ clamp.id }}">{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
+                            <td class="editable" data-field="time_in" data-id="{{ clamp.id }}">{{ clamp.time_in.strftime('%H:%M') }}</td>
+                            <td class="editable" data-field="time_released" data-id="{{ clamp.id }}">{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
+                            <td class="editable" data-field="offense" data-id="{{ clamp.id }}">{{ clamp.offense }}</td>
+                            <td class="editable status-cell" data-field="payment_status" data-id="{{ clamp.id }}"><span class="status-{{ clamp.payment_status.lower().replace(' ', '-') }}">{{ clamp.payment_status }}</span></td>
+                            <td>
+                                <button class="btn btn-edit" onclick="editRow({{ clamp.id }})">Edit</button>
+                                <a href="{{ url_for('delete_clamp', id=clamp.id) }}" class="btn btn-delete" onclick="return confirm('Delete this entry?')">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-data">No clamp data records yet. <a href="#add-tab" onclick="openTab(event, 'add-tab')">Add one now</a></p>
+            {% endif %}
+        </div>
+
+        <!-- Add Data Tab -->
+        <div id="add-tab" class="tab-content">
+            <h2>Add New Clamp Entry</h2>
+            <form method="POST" action="{{ url_for('add_clamp') }}" class="form">
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registration">Registration:</label>
+                    <input type="text" id="registration" name="registration">
+                </div>
+
+                <div class="form-group">
+                    <label for="clamp_date">Date:</label>
+                    <input type="date" id="clamp_date" name="clamp_date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="time_in">Time In:</label>
+                    <input type="time" id="time_in" name="time_in" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="time_released">Time Released:</label>
+                    <input type="time" id="time_released" name="time_released">
+                </div>
+
+                <div class="form-group">
+                    <label for="offense">Offense:</label>
+                    <textarea id="offense" name="offense" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="payment_status">Payment Status:</label>
+                    <select id="payment_status" name="payment_status" required>
+                        <option value="Processing">Processing</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Not Paid">Not Paid</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Entry</button>
+            </form>
+        </div>
+
+        <!-- Invoicing Tab -->
+        <div id="invoicing-tab" class="tab-content">
+            <h2>Invoicing - Paid Records</h2>
+            <a href="/invoicing" target="_blank" class="btn btn-print">Open Full Invoice</a>
+            {% set paid_records = clamps|selectattr('payment_status', 'equalto', 'Paid')|list %}
+            {% if paid_records %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Registration</th>
+                            <th>Date</th>
+                            <th>Time In</th>
+                            <th>Time Released</th>
+                            <th>Offense</th>
+                                     <th>Status</th>
+                                     <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for clamp in paid_records %}
+                        <tr id="paid-row-{{ clamp.id }}">
+                            <td>{{ clamp.location }}</td>
+                            <td>{{ clamp.registration or '' }}</td>
+                            <td>{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
+                            <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
+                            <td>{{ clamp.offense }}</td>
+                            <td><span class="status-paid">Paid</span></td>
+                            <td class="actions">
+                                <button type="button" class="btn btn-sm btn-info" onclick="editPaidRow({{ clamp.id }})">Edit</button>
+                                <button type="button" class="btn btn-sm btn-print" onclick="printPaidInvoice({{ clamp.id }})">Print</button>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="presentInvoice({{ clamp.id }})">Present</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-data">No paid records found.</p>
+            {% endif %}
+        </div>
+
+        <!-- Appeals Tab -->
+        <div id="appeals-tab" class="tab-content">
+            <h2>Appeals</h2>
+            <div class="appeals-section">
+                <h3>Add New Appeal</h3>
+                <form method="POST" action="/add-appeal" class="form">
+                    <div class="form-group">
+                        <label for="appeal_clamp_id">Clamp ID:</label>
+                        <select id="appeal_clamp_id" name="clamp_id" required onchange="populateClampDetails()">
+                            <option value="">Select a clamp record</option>
+                            {% for clamp in clamps %}
+                            <option value="{{ clamp.id }}">ID: {{ clamp.id }} - {{ clamp.location }} ({{ clamp.clamp_date }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="appeal_location">Location:</label>
+                        <input type="text" id="appeal_location" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="appeal_registration">Registration:</label>
+                        <input type="text" id="appeal_registration" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="appeal_reason">Appeal Reason:</label>
+                        <textarea id="appeal_reason" name="appeal_reason" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="appeal_status">Appeal Status:</label>
+                        <select id="appeal_status" name="appeal_status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Appeal</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            for (const tab of tabs) tab.classList.remove('active');
+
+            const buttons = document.querySelectorAll('.tab-button');
+            for (const btn of buttons) btn.classList.remove('active');
+
+            document.getElementById(tabName).classList.add('active');
+            if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+        }
+
+        function populateClampDetails() {
+            const clampId = document.getElementById('appeal_clamp_id').value;
+            if (!clampId) {
+                document.getElementById('appeal_location').value = '';
+                document.getElementById('appeal_registration').value = '';
+                return;
+            }
+            fetch(`/api/clamp/${clampId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('appeal_location').value = data.location || '';
+                    document.getElementById('appeal_registration').value = data.registration || '';
+                })
+                .catch(err => console.error('Error fetching clamp details:', err));
+        }
+
+        function editPaidRow(id) {
+            const row = document.getElementById(`paid-row-${id}`);
+            if (!row) return;
+            const newLocation = prompt('Enter location:', row.cells[0].textContent);
+            if (newLocation === null) return;
+            const registration = prompt('Enter registration:', row.cells[1].textContent);
+            const formData = new FormData();
+            formData.append('location', newLocation);
+            formData.append('registration', registration || '');
+            formData.append('clamp_date', row.cells[2].textContent);
+            formData.append('time_in', row.cells[3].textContent);
+            formData.append('time_released', row.cells[4].textContent);
+            formData.append('offense', row.cells[5].textContent);
+            formData.append('payment_status', 'Paid');
+            fetch(`/edit-clamp/${id}`, {method: 'POST', body: formData}).then(() => window.location.reload()).catch(err=>console.error(err));
+        }
+
+        function printPaidInvoice(id) {
+            const row = document.getElementById(`paid-row-${id}`);
+            if (!row) return;
+            const w = window.open('', '', 'height=600,width=800');
+            w.document.write(`<html><head><title>Invoice #${id}</title><style>body{font-family:Arial;margin:40px}.header{text-align:center;margin:30px 0}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.footer{margin-top:40px;border-top:1px solid #ccc;padding-top:20px;text-align:center;font-size:12px;color:#666}</style></head><body><div class="header"><h1>PAID INVOICE</h1><p>Invoice #${id}</p></div><div><table><tr><td><b>Location:</b> ${row.cells[0].textContent}</td></tr><tr><td><b>Registration:</b> ${row.cells[1].textContent}</td></tr><tr><td><b>Date:</b> ${row.cells[2].textContent}</td></tr><tr><td><b>Time In:</b> ${row.cells[3].textContent}</td></tr><tr><td><b>Time Released:</b> ${row.cells[4].textContent}</td></tr><tr><td><b>Offense:</b> ${row.cells[5].textContent}</td></tr><tr><td><b>Status:</b> PAID</td></tr></table></div><div class="footer"><p>Generated: ${new Date().toLocaleString()}</p><p>Official paid invoice. Keep for records.</p></div></body></html>`);
+            w.document.close();
+            w.print();
+        }
+
+        function editRow(id) {
+            const row = document.getElementById(`row-${id}`);
+            const cells = row.querySelectorAll('td.editable');
+            
+            if (row.classList.contains('editing')) {
+                saveRow(id);
+            } else {
+                cells.forEach(cell => {
+                    const field = cell.dataset.field;
+                    const value = cell.textContent.trim();
+                    let input;
+                    
+                    if (field === 'clamp_date') {
+                        input = document.createElement('input');
+                        input.type = 'date';
+                        input.value = value;
+                    } else if (field === 'time_in' || field === 'time_released') {
+                        input = document.createElement('input');
+                        input.type = 'time';
+                        input.value = value !== 'N/A' ? value : '';
+                    } else if (field === 'payment_status') {
+                        input = document.createElement('select');
+                        input.innerHTML = '<option value="Processing">Processing</option><option value="Paid">Paid</option><option value="Not Paid">Not Paid</option>';
+                        input.value = value;
+                    } else if (field === 'offense') {
+                        input = document.createElement('textarea');
+                        input.value = value;
+                    } else {
+                        input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = value;
+                    }
+                    input.className = 'edit-input';
+                    cell.textContent = '';
+                    cell.appendChild(input);
+                });
+                row.classList.add('editing');
+                const button = row.querySelector('.btn-edit');
+                button.textContent = 'Save';
+                button.classList.add('btn-save');
+            }
+        }
+
+        function saveRow(id) {
+            const row = document.getElementById(`row-${id}`);
+            const cells = row.querySelectorAll('td.editable');
+            const formData = new FormData();
+            
+            cells.forEach(cell => {
+                const input = cell.querySelector('input, textarea, select');
+                const field = cell.dataset.field;
+                if (input) {
+                    formData.append(field, input.value);
+                }
+            });
+
+            fetch(`/edit-clamp/${id}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

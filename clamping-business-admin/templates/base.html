@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clamping Business Administration</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#c3e6cb">
 </head>
 <body>
     <div class="container">
@@ -26,5 +28,6 @@
             <p>&copy; {{ current_year }} Clamping Business. All rights reserved.</p>
         </footer>
     </div>
+    <script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
 </body>
 </html>

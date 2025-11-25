@@ -3,6 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if edit %}Edit{% else %}Add{% endif %} Clamp Entry</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>{% if edit %}Edit{% else %}Add New{% endif %} Clamp Entry</h1>
+        
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label for="clamp_id">Clamp ID:</label>
+                <input type="text" id="clamp_id" name="clamp_id" value="{{ clamp.clamp_id if edit else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customer_name">Customer Name:</label>
+                <input type="text" id="customer_name" name="customer_name" value="{{ clamp.customer_name if edit else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="vehicle_registration">Vehicle Registration:</label>
+                <input type="text" id="vehicle_registration" name="vehicle_registration" value="{{ clamp.vehicle_registration if edit else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" value="{{ clamp.location if edit else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reason">Reason for Clamping:</label>
+                <textarea id="reason" name="reason" required>{{ clamp.reason if edit else '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status:</label>
+                <select id="status" name="status">
+                    <option value="Active" {% if edit and clamp.status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Released" {% if edit and clamp.status == 'Released' %}selected{% endif %}>Released</option>
+                    <option value="Pending" {% if edit and clamp.status == 'Pending' %}selected{% endif %}>Pending</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" name="notes">{{ clamp.notes if edit else '' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% if edit %}Update{% else %}Add{% endif %} Entry</button>
+                <a href="{{ url_for('clamp_list') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import os
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clamping_business.db'
+app.config['SECRET_KEY'] = 'your-secret-key-change-this'
+
+db = SQLAlchemy(app)
+
+# Database Models
+class Clamp(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    clamp_id = db.Column(db.String(100), unique=True, nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    vehicle_registration = db.Column(db.String(50), nullable=False)
+    location = db.Column(db.String(200), nullable=False)
+    clamp_date = db.Column(db.DateTime, default=datetime.utcnow)
+    reason = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.String(50), default='Active')
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Clamp {self.clamp_id}>'
+
+# Routes
+@app.route('/')
+def dashboard():
+    total_clamps = Clamp.query.count()
+    total_customers = db.session.query(Clamp.customer_name).distinct().count()
+    pending_orders = Clamp.query.filter_by(status='Active').count()
+    
+    return render_template('dashboard.html', 
+                         total_clamps=total_clamps,
+                         total_customers=total_customers,
+                         pending_orders=pending_orders)
+
+@app.route('/clamp-form', methods=['GET', 'POST'])
+def clamp_form():
+    if request.method == 'POST':
+        try:
+            new_clamp = Clamp(
+                clamp_id=request.form['clamp_id'],
+                customer_name=request.form['customer_name'],
+                vehicle_registration=request.form['vehicle_registration'],
+                location=request.form['location'],
+                reason=request.form['reason'],
+                status=request.form['status'],
+                notes=request.form['notes']
+            )
+            db.session.add(new_clamp)
+            db.session.commit()
+            flash('Clamp entry added successfully!', 'success')
+            return redirect(url_for('clamp_list'))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'error')
+    
+    return render_template('clamp_form.html')
+
+@app.route('/clamp-list')
+def clamp_list():
+    clamps = Clamp.query.all()
+    return render_template('clamp_list.html', clamps=clamps)
+
+@app.route('/clamp-edit/<int:id>', methods=['GET', 'POST'])
+def clamp_edit(id):
+    clamp = Clamp.query.get_or_404(id)
+    if request.method == 'POST':
+        clamp.customer_name = request.form['customer_name']
+        clamp.vehicle_registration = request.form['vehicle_registration']
+        clamp.location = request.form['location']
+        clamp.reason = request.form['reason']
+        clamp.status = request.form['status']
+        clamp.notes = request.form['notes']
+        db.session.commit()
+        flash('Clamp entry updated successfully!', 'success')
+        return redirect(url_for('clamp_list'))
+    
+    return render_template('clamp_form.html', clamp=clamp, edit=True)
+
+@app.route('/clamp-delete/<int:id>')
+def clamp_delete(id):
+    clamp = Clamp.query.get_or_404(id)
+    db.session.delete(clamp)
+    db.session.commit()
+    flash('Clamp entry deleted successfully!', 'success')
+    return redirect(url_for('clamp_list'))
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% if edit %}Edit{% else %}Add{% endif %} Clamp Entry</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <h1>{% if edit %}Edit{% else %}Add New{% endif %} Clamp Entry</h1>
+            
+            <form method="POST" class="form">
+                <div class="form-group">
+                    <label for="clamp_id">Clamp ID:</label>
+                    <input type="text" id="clamp_id" name="clamp_id" value="{{ clamp.clamp_id if edit else '' }}" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="customer_name">Customer Name:</label>
+                    <input type="text" id="customer_name" name="customer_name" value="{{ clamp.customer_name if edit else '' }}" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="vehicle_registration">Vehicle Registration:</label>
+                    <input type="text" id="vehicle_registration" name="vehicle_registration" value="{{ clamp.vehicle_registration if edit else '' }}" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" value="{{ clamp.location if edit else '' }}" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="reason">Reason for Clamping:</label>
+                    <textarea id="reason" name="reason" required>{{ clamp.reason if edit else '' }}</textarea>
+                </div>
+    
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <option value="Active" {% if edit and clamp.status == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Released" {% if edit and clamp.status == 'Released' %}selected{% endif %}>Released</option>
+                        <option value="Pending" {% if edit and clamp.status == 'Pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+    
+                <div class="form-group">
+                    <label for="notes">Notes:</label>
+                    <textarea id="notes" name="notes">{{ clamp.notes if edit else '' }}</textarea>
+                </div>
+    
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">{% if edit %}Update{% else %}Add{% endif %} Entry</button>
+                    <a href="{{ url_for('clamp_list') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </body>
+    </html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clamp Form</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
