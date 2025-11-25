@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clamp List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Clamp List</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Clamp Type</th>
+                    <th>Quantity</th>
+                    <th>Date Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clamp in clamps %}
+                <tr>
+                    <td>{{ clamp.customer_name }}</td>
+                    <td>{{ clamp.clamp_type }}</td>
+                    <td>{{ clamp.quantity }}</td>
+                    <td>{{ clamp.date_submitted }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('clamp_form') }}">Add New Clamp Entry</a>
+    </div>
+</body>
+</html>
