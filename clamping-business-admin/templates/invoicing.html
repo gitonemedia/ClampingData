@@ -6,132 +6,153 @@
     <title>Invoicing - Clamping Business</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            .container {
-                box-shadow: none;
-                padding: 0;
-            }
-            body {
-                background: white;
-                padding: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Invoice Report - Paid Records</h1>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Invoicing - Clamping Business</title>
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+            <style>
+                @media print {
+                    .no-print { display: none !important; }
+                    .container { box-shadow: none; padding: 0; }
+                    body { background: white; padding: 0; }
+                }
+                /* small inline styles for spinner and toast */
+                .save-spinner{ font-size:0.95rem }
+                #toast{ position:fixed; right:20px; bottom:20px; min-width:200px; padding:10px 14px; border-radius:6px; color:#fff; display:none }
+                #toast.success{ background:#28a745 }
+                #toast.error{ background:#dc3545 }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Invoice Report - Paid Records</h1>
         
-        <div class="invoicing-header no-print">
-            <a href="/" class="btn">Back to Dashboard</a>
-            <button class="btn btn-print" onclick="window.print()">Print Invoice</button>
-        </div>
+                <div class="invoicing-header no-print">
+                    <a href="/" class="btn">Back to Dashboard</a>
+                    <button class="btn btn-print" onclick="window.print()">Print Invoice</button>
+                </div>
 
-        {% if paid_clamps %}
-            <div class="invoice-section">
-                <h2>Paid Clamp Records</h2>
-                <p class="invoice-info"><strong>Total Records:</strong> {{ paid_clamps|length }}</p>
-                <p class="invoice-info"><strong>Date Generated:</strong> {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                {% if paid_clamps %}
+                    <div class="invoice-section">
+                        <h2>Paid Clamp Records</h2>
+                        <p class="invoice-info"><strong>Total Records:</strong> {{ paid_clamps|length }}</p>
+                        <p class="invoice-info"><strong>Date Generated:</strong> {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                 
-                <table class="invoice-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Location</th>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Released</th>
-                            <th>Offense</th>
-                            <th>Amount (USD)</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for clamp in paid_clamps %}
-                        <tr>
-                            <td>{{ clamp.id }}</td>
-                            <td>{{ clamp.location }}</td>
-                            <td>{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
-                            <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
-                            <td>{{ clamp.offense }}</td>
-                            <td>
-                                <input
-                                    type="number"
-                                    class="amount-input"
-                                    step="0.01"
-                                    min="0"
-                                    value="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
-                                    data-id="{{ clamp.id }}"
-                                    data-prev="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
-                                >
-                            </td>
-                            <td><span class="status-paid">Paid</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Location</th>
+                                    <th>Date</th>
+                                    <th>Time In</th>
+                                    <th>Time Released</th>
+                                    <th>Offense</th>
+                                    <th>Amount (USD)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for clamp in paid_clamps %}
+                                <tr>
+                                    <td>{{ clamp.id }}</td>
+                                    <td>{{ clamp.location }}</td>
+                                    <td>{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
+                                    <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
+                                    <td>{{ clamp.offense }}</td>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            class="amount-input"
+                                            step="0.01"
+                                            min="0"
+                                            value="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
+                                            data-id="{{ clamp.id }}"
+                                            data-prev="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
+                                        >
+                                        <span class="save-spinner" data-id="spinner-{{ clamp.id }}" style="display:none;margin-left:8px">⏳</span>
+                                    </td>
+                                    <td><span class="status-paid">{{ clamp.payment_status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
 
-                <div class="invoice-footer">
-                    <p class="invoice-info"><strong>Total Amount:</strong> <span id="total-amount">{{ '%.2f'|format(total_amount) }}</span> USD</p>
-                </div>
+                        <div class="invoice-footer">
+                            <p class="invoice-info"><strong>Total Amount:</strong> <span id="total-amount">{{ '%.2f'|format(total_amount) }}</span> USD</p>
+                        </div>
 
-                <div class="invoice-footer">
-                    <p>This is an official record of all paid clamping records. Please keep for your records.</p>
-                </div>
+                        <div class="invoice-footer">
+                            <p>This is an official record of all paid clamping records. Please keep for your records.</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="no-data">
+                        <p>No paid records found.</p>
+                        <a href="/" class="btn">Back to Dashboard</a>
+                    </div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="no-data">
-                <p>No paid records found.</p>
-                <a href="/" class="btn">Back to Dashboard</a>
-            </div>
-        {% endif %}
-    </div>
 
-    <script>
-        // Inline editing for Amount Paid
-        (function(){
-            function toFloat(v){
-                var n = parseFloat(v);
-                return isNaN(n) ? 0 : n;
-            }
+            <div id="toast"></div>
+            <script>
+                // Inline editing for Amount Paid: save on blur, show spinner and toast
+                (function(){
+                    function toFloat(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
-            var inputs = document.querySelectorAll('.amount-input');
-            inputs.forEach(function(inp){
-                inp.addEventListener('change', function(e){
-                    var el = e.target;
-                    var id = el.dataset.id;
-                    var prev = toFloat(el.dataset.prev);
-                    var val = toFloat(el.value);
+                    function showToast(msg, ok){
+                        var t = document.getElementById('toast');
+                        t.textContent = msg;
+                        t.className = ok ? 'success' : 'error';
+                        t.style.display = 'block';
+                        clearTimeout(t._hide);
+                        t._hide = setTimeout(function(){ t.style.display = 'none'; }, 3000);
+                    }
 
-                    el.disabled = true;
+                    var inputs = document.querySelectorAll('.amount-input');
+                    inputs.forEach(function(inp){
+                        var spinner = inp.nextElementSibling;
 
-                    fetch('/api/clamp/' + id + '/amount', {
-                        method: 'POST',
-                        headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({amount_paid: val})
-                    }).then(function(resp){
-                        if(!resp.ok) throw new Error('Server error');
-                        return resp.json();
-                    }).then(function(json){
-                        el.dataset.prev = (json.amount_paid||0).toFixed(2);
-                        el.value = (json.amount_paid||0).toFixed(2);
-                        var totalEl = document.getElementById('total-amount');
-                        if(totalEl && typeof json.total_amount !== 'undefined'){
-                            totalEl.textContent = (json.total_amount||0).toFixed(2);
+                        function save(){
+                            var el = inp;
+                            var id = el.dataset.id;
+                            var prev = toFloat(el.dataset.prev);
+                            var val = toFloat(el.value);
+
+                            el.disabled = true;
+                            if(spinner) spinner.style.display = '';
+
+                            fetch('/api/clamp/' + id + '/amount', {
+                                method: 'POST',
+                                headers: {'Content-Type':'application/json'},
+                                body: JSON.stringify({amount_paid: val})
+                            }).then(function(resp){
+                                if(!resp.ok) throw new Error('Server error');
+                                return resp.json();
+                            }).then(function(json){
+                                el.dataset.prev = (json.amount_paid||0).toFixed(2);
+                                el.value = (json.amount_paid||0).toFixed(2);
+                                var totalEl = document.getElementById('total-amount');
+                                if(totalEl && typeof json.total_amount !== 'undefined'){
+                                    totalEl.textContent = (json.total_amount||0).toFixed(2);
+                                }
+                                showToast('Saved', true);
+                            }).catch(function(err){
+                                showToast('Save failed', false);
+                                el.value = prev.toFixed(2);
+                            }).finally(function(){
+                                el.disabled = false;
+                                if(spinner) spinner.style.display = 'none';
+                            });
                         }
-                    }).catch(function(err){
-                        alert('Failed to save amount: ' + err.message);
-                        el.value = prev.toFixed(2);
-                    }).finally(function(){
-                        el.disabled = false;
+
+                        inp.addEventListener('blur', save);
+                        inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); inp.blur(); } });
                     });
-                });
-            });
-        })();
-    </script>
-</body>
-</html>
+                })();
+            </script>
+        </body>
+        </html>

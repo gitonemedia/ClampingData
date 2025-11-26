@@ -32,20 +32,33 @@
         <td><strong>Amount (USD)</strong></td>
         <td>
           <input id="amount-input" type="number" step="0.01" min="0" value="{{ '%.2f'|format(clamp.amount_paid or 0) }}" style="font-size:1.1rem;padding:6px;width:150px">
+          <span id="spinner" style="display:none;margin-left:8px">⏳</span>
         </td>
       </tr>
     </table>
     <div style="margin-top:30px;text-align:center;color:#666;font-size:0.9rem">Present display mode</div>
   </div>
+  <style>
+    #toast-p { position: fixed; right: 20px; bottom: 20px; min-width:200px; padding:10px 14px; border-radius:6px; color:#fff; display:none }
+    #toast-p.success{ background: #28a745 }
+    #toast-p.error{ background: #dc3545 }
+  </style>
+  <div id="toast-p"></div>
   <script>
     (function(){
       var inp = document.getElementById('amount-input');
-      var statusCell = document.querySelector('.invoice-table td:contains("{{ clamp.payment_status }}")');
-      // Fallback: also add/update status using a small id if available
+      var spinner = document.getElementById('spinner');
+
       function toFloat(v){var n=parseFloat(v);return isNaN(n)?0:n;}
 
+      function showToast(msg, ok){
+        var t = document.getElementById('toast-p');
+        t.textContent = msg; t.className = ok ? 'success' : 'error'; t.style.display = 'block';
+        clearTimeout(t._hide);
+        t._hide = setTimeout(function(){ t.style.display = 'none'; }, 3000);
+      }
+
       function updateStatusText(text){
-        // Try to find the Status cell by searching rows
         var rows = document.querySelectorAll('.invoice-table tr');
         rows.forEach(function(r){
           var th = r.querySelector('td:first-child');
@@ -60,25 +73,21 @@
 
       function saveAmount(){
         var val = toFloat(inp.value);
-        inp.disabled = true;
+        inp.disabled = true; if(spinner) spinner.style.display = '';
         fetch('/api/clamp/' + {{ clamp.id }} + '/amount', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({amount_paid: val})
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount_paid: val})
         }).then(function(resp){
-          if(!resp.ok) throw new Error('Server error');
-          return resp.json();
+          if(!resp.ok) throw new Error('Server error'); return resp.json();
         }).then(function(json){
           inp.value = (json.amount_paid||0).toFixed(2);
           updateStatusText((json.amount_paid && json.amount_paid>0)?'Paid':'Not Paid');
+          showToast('Saved', true);
         }).catch(function(err){
-          alert('Failed to save amount: ' + err.message);
-        }).finally(function(){
-          inp.disabled = false;
-        });
+          showToast('Save failed', false);
+        }).finally(function(){ inp.disabled = false; if(spinner) spinner.style.display = 'none'; });
       }
 
-      inp.addEventListener('change', saveAmount);
+      inp.addEventListener('blur', saveAmount);
       inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); inp.blur(); } });
     })();
   </script>
