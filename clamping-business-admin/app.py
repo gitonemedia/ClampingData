@@ -284,6 +284,38 @@ def invoicing():
     return render_template('invoicing.html', paid_clamps=paid_clamps, now=datetime.now(), total_amount=total_amount)
 
 
+@app.route('/api/clamp/<int:id>/amount', methods=['POST'])
+def update_clamp_amount(id):
+    """Update the amount_paid for a clamp via AJAX (JSON).
+    Returns the updated clamp amount and recomputed total for paid clamps.
+    """
+    clamp = ClampData.query.get_or_404(id)
+    data = request.get_json() or {}
+    try:
+        amt = float(data.get('amount_paid', 0))
+    except Exception:
+        return {'error': 'invalid amount'}, 400
+
+    clamp.amount_paid = amt
+    # if there's a positive amount, mark as Paid
+    try:
+        if amt and amt > 0:
+            clamp.payment_status = 'Paid'
+    except Exception:
+        pass
+
+    db.session.commit()
+
+    paid_clamps = ClampData.query.filter_by(payment_status='Paid').all()
+    total_amount = sum((c.amount_paid or 0.0) for c in paid_clamps)
+
+    return {
+        'id': clamp.id,
+        'amount_paid': round(clamp.amount_paid or 0.0, 2),
+        'total_amount': round(total_amount or 0.0, 2)
+    }
+
+
 @app.route('/presentation/invoice/<int:id>')
 def presentation_invoice(id):
     clamp = ClampData.query.get_or_404(id)

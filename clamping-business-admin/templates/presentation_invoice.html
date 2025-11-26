@@ -28,8 +28,59 @@
       <tr><td><strong>Time Released</strong></td><td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td></tr>
       <tr><td><strong>Offense</strong></td><td>{{ clamp.offense }}</td></tr>
       <tr><td><strong>Status</strong></td><td>{{ clamp.payment_status }}</td></tr>
+      <tr>
+        <td><strong>Amount (USD)</strong></td>
+        <td>
+          <input id="amount-input" type="number" step="0.01" min="0" value="{{ '%.2f'|format(clamp.amount_paid or 0) }}" style="font-size:1.1rem;padding:6px;width:150px">
+        </td>
+      </tr>
     </table>
     <div style="margin-top:30px;text-align:center;color:#666;font-size:0.9rem">Present display mode</div>
   </div>
+  <script>
+    (function(){
+      var inp = document.getElementById('amount-input');
+      var statusCell = document.querySelector('.invoice-table td:contains("{{ clamp.payment_status }}")');
+      // Fallback: also add/update status using a small id if available
+      function toFloat(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+
+      function updateStatusText(text){
+        // Try to find the Status cell by searching rows
+        var rows = document.querySelectorAll('.invoice-table tr');
+        rows.forEach(function(r){
+          var th = r.querySelector('td:first-child');
+          if(th && th.textContent.trim() === 'Status'){
+            var td = r.querySelector('td:nth-child(2)');
+            if(td) td.textContent = text;
+          }
+        });
+      }
+
+      if(!inp) return;
+
+      function saveAmount(){
+        var val = toFloat(inp.value);
+        inp.disabled = true;
+        fetch('/api/clamp/' + {{ clamp.id }} + '/amount', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({amount_paid: val})
+        }).then(function(resp){
+          if(!resp.ok) throw new Error('Server error');
+          return resp.json();
+        }).then(function(json){
+          inp.value = (json.amount_paid||0).toFixed(2);
+          updateStatusText((json.amount_paid && json.amount_paid>0)?'Paid':'Not Paid');
+        }).catch(function(err){
+          alert('Failed to save amount: ' + err.message);
+        }).finally(function(){
+          inp.disabled = false;
+        });
+      }
+
+      inp.addEventListener('change', saveAmount);
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); inp.blur(); } });
+    })();
+  </script>
 </body>
 </html>

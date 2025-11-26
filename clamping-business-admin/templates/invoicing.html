@@ -58,7 +58,17 @@
                             <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
                             <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
                             <td>{{ clamp.offense }}</td>
-                            <td>{{ '%.2f'|format(clamp.amount_paid or 0) }}</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    class="amount-input"
+                                    step="0.01"
+                                    min="0"
+                                    value="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
+                                    data-id="{{ clamp.id }}"
+                                    data-prev="{{ '%.2f'|format(clamp.amount_paid or 0) }}"
+                                >
+                            </td>
                             <td><span class="status-paid">Paid</span></td>
                         </tr>
                         {% endfor %}
@@ -66,7 +76,7 @@
                 </table>
 
                 <div class="invoice-footer">
-                    <p class="invoice-info"><strong>Total Amount:</strong> {{ '%.2f'|format(total_amount) }} USD</p>
+                    <p class="invoice-info"><strong>Total Amount:</strong> <span id="total-amount">{{ '%.2f'|format(total_amount) }}</span> USD</p>
                 </div>
 
                 <div class="invoice-footer">
@@ -82,7 +92,46 @@
     </div>
 
     <script>
-        // Pass current date/time to the template
+        // Inline editing for Amount Paid
+        (function(){
+            function toFloat(v){
+                var n = parseFloat(v);
+                return isNaN(n) ? 0 : n;
+            }
+
+            var inputs = document.querySelectorAll('.amount-input');
+            inputs.forEach(function(inp){
+                inp.addEventListener('change', function(e){
+                    var el = e.target;
+                    var id = el.dataset.id;
+                    var prev = toFloat(el.dataset.prev);
+                    var val = toFloat(el.value);
+
+                    el.disabled = true;
+
+                    fetch('/api/clamp/' + id + '/amount', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({amount_paid: val})
+                    }).then(function(resp){
+                        if(!resp.ok) throw new Error('Server error');
+                        return resp.json();
+                    }).then(function(json){
+                        el.dataset.prev = (json.amount_paid||0).toFixed(2);
+                        el.value = (json.amount_paid||0).toFixed(2);
+                        var totalEl = document.getElementById('total-amount');
+                        if(totalEl && typeof json.total_amount !== 'undefined'){
+                            totalEl.textContent = (json.total_amount||0).toFixed(2);
+                        }
+                    }).catch(function(err){
+                        alert('Failed to save amount: ' + err.message);
+                        el.value = prev.toFixed(2);
+                    }).finally(function(){
+                        el.disabled = false;
+                    });
+                });
+            });
+        })();
     </script>
 </body>
 </html>
