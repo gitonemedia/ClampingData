@@ -7,11 +7,16 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>Locatio</th>
+                <th>Image</th>
+                <th>Location</th>
                 <th>Registration</th>
                 <th>Date</th>
                 <th>Time In</th>
+                <th>Time Called</th>
                 <th>Time Released</th>
+                <th>Car Type</th>
+                <th>Color</th>
+                <th>Clamp Ref</th>
                 <th>Offense</th>
                 <th>Amount Paid</th>
                 <th>Status</th>
@@ -21,11 +26,22 @@
         <tbody>
             {% for clamp in clamps %}
             <tr>
+                <td>
+                    {% if clamp.image_path %}
+                        <img src="{{ url_for('static', filename=clamp.image_path) }}" alt="img" style="max-width:100px; max-height:60px;" />
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>{{ clamp.location }}</td>
                 <td>{{ clamp.registration or '' }}</td>
                 <td>{{ clamp.clamp_date.strftime('%Y-%m-%d') }}</td>
                 <td>{{ clamp.time_in.strftime('%H:%M') }}</td>
+                <td>{{ clamp.time_called.strftime('%H:%M') if clamp.time_called else 'N/A' }}</td>
                 <td>{{ clamp.time_released.strftime('%H:%M') if clamp.time_released else 'N/A' }}</td>
+                <td>{{ clamp.car_type or '' }}</td>
+                <td>{{ clamp.color or '' }}</td>
+                <td>{{ clamp.clamp_reference or '' }}</td>
                 <td>{{ clamp.offense }}</td>
                 <td>{{ '%.2f'|format(clamp.amount_paid or 0) }}</td>
                 <td><span class="status-{{ clamp.payment_status.lower().replace(' ', '-') }}">{{ clamp.payment_status }}</span></td>

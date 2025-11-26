@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -8,6 +9,8 @@ from functools import wraps
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clamping_business.db'
 app.config['SECRET_KEY'] = '091043239123abc'
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
+app.config.setdefault('MAX_CONTENT_LENGTH', 8 * 1024 * 1024)  # 8 MB limit
 
 db = SQLAlchemy(app)
 
@@ -57,6 +60,11 @@ def ensure_force_password_column():
     required = [
         ("user", "force_password_change", "INTEGER", "0"),
         ("clamp_data", "amount_paid", "REAL", "0.0"),
+        ("clamp_data", "image_path", "TEXT", "''"),
+        ("clamp_data", "time_called", "TEXT", "''"),
+        ("clamp_data", "car_type", "TEXT", "''"),
+        ("clamp_data", "color", "TEXT", "''"),
+        ("clamp_data", "clamp_reference", "TEXT", "''"),
     ]
     import sqlite3
     for path in candidate_paths:
@@ -99,7 +107,12 @@ class ClampData(db.Model):
     registration = db.Column(db.String(100))
     clamp_date = db.Column(db.Date, nullable=False)
     time_in = db.Column(db.Time, nullable=False)
+    time_called = db.Column(db.Time)
     time_released = db.Column(db.Time)
+    car_type = db.Column(db.String(100))
+    color = db.Column(db.String(50))
+    clamp_reference = db.Column(db.String(100))
+    image_path = db.Column(db.String(300))
     offense = db.Column(db.String(300), nullable=False)
     payment_status = db.Column(db.String(50), default='Processing')  # Paid, Not Paid, Processing
     amount_paid = db.Column(db.Float, default=0.0)
@@ -210,15 +223,30 @@ def clamp_list():
 @app.route('/add-clamp', methods=['POST'])
 def add_clamp():
     try:
+        # create model from form
         new_clamp = ClampData(
             location=request.form['location'],
             registration=request.form.get('registration',''),
             clamp_date=datetime.strptime(request.form['clamp_date'], '%Y-%m-%d').date(),
             time_in=datetime.strptime(request.form['time_in'], '%H:%M').time(),
-            time_released=datetime.strptime(request.form['time_released'], '%H:%M').time() if request.form['time_released'] else None,
+            time_released=datetime.strptime(request.form['time_released'], '%H:%M').time() if request.form.get('time_released') else None,
+            time_called=datetime.strptime(request.form['time_called'], '%H:%M').time() if request.form.get('time_called') else None,
             offense=request.form['offense'],
-            payment_status=request.form['payment_status']
+            payment_status=request.form['payment_status'],
+            car_type=request.form.get('car_type',''),
+            color=request.form.get('color',''),
+            clamp_reference=request.form.get('clamp_reference','')
         )
+        # handle image upload
+        img = request.files.get('image')
+        if img and img.filename:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            filename = secure_filename(img.filename)
+            unique = f"{int(datetime.utcnow().timestamp())}_{filename}"
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique)
+            img.save(save_path)
+            # store relative path for url_for('static') access
+            new_clamp.image_path = os.path.join('images', unique)
         # optional amount_paid
         try:
             amt = request.form.get('amount_paid')
@@ -261,6 +289,19 @@ def edit_clamp(id):
         clamp.clamp_date = datetime.strptime(request.form['clamp_date'], '%Y-%m-%d').date()
         clamp.time_in = datetime.strptime(request.form['time_in'], '%H:%M').time()
         clamp.time_released = datetime.strptime(request.form['time_released'], '%H:%M').time() if request.form['time_released'] else None
+        clamp.time_called = datetime.strptime(request.form['time_called'], '%H:%M').time() if request.form.get('time_called') else None
+        clamp.car_type = request.form.get('car_type','')
+        clamp.color = request.form.get('color','')
+        clamp.clamp_reference = request.form.get('clamp_reference','')
+        # handle image upload (replace if provided)
+        img = request.files.get('image')
+        if img and img.filename:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            filename = secure_filename(img.filename)
+            unique = f"{int(datetime.utcnow().timestamp())}_{filename}"
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique)
+            img.save(save_path)
+            clamp.image_path = os.path.join('images', unique)
         clamp.offense = request.form['offense']
         clamp.payment_status = request.form['payment_status']
         # optional amount_paid update

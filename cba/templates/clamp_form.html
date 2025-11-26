@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container">
     <h2>{{ 'Edit' if edit else 'Add New' }} Clamp Entry</h2>
-    <form method="POST" action="{{ url_for('add_clamp') if not edit else url_for('edit_clamp', id=clamp.id) }}" class="form">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('add_clamp') if not edit else url_for('edit_clamp', id=clamp.id) }}" class="form">
         <div class="form-group">
             <label for="location">Location:</label>
             <input type="text" id="location" name="location" value="{{ clamp.location if edit else '' }}" required>
@@ -21,6 +21,37 @@
         <div class="form-group">
             <label for="time_in">Time In:</label>
             <input type="time" id="time_in" name="time_in" value="{{ clamp.time_in.strftime('%H:%M') if edit and clamp.time_in else '' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="time_called">Time Called:</label>
+            <input type="time" id="time_called" name="time_called" value="{{ clamp.time_called.strftime('%H:%M') if edit and clamp.time_called else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="car_type">Car Type:</label>
+            <input type="text" id="car_type" name="car_type" value="{{ clamp.car_type if edit else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="color">Color:</label>
+            <input type="text" id="color" name="color" value="{{ clamp.color if edit else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="clamp_reference">Clamp Reference Code:</label>
+            <input type="text" id="clamp_reference" name="clamp_reference" value="{{ clamp.clamp_reference if edit else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="image">Vehicle Image:</label>
+            <input type="file" id="image" name="image" accept="image/*">
+            {% if edit and clamp.image_path %}
+            <div class="existing-image">
+                <p>Current image:</p>
+                <img src="{{ url_for('static', filename=clamp.image_path) }}" alt="vehicle image" style="max-width:200px; max-height:150px;" />
+            </div>
+            {% endif %}
         </div>
 
         <div class="form-group">
